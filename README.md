@@ -1,5 +1,5 @@
 # windows-graphics-test-1
-A test of the use of the Windows API in graphics
+A test of the use of the Windows API in graphics. Made for Visual Studio Community 2017
 
 Draws two squares: One controllable red square, and one uncontrollable blue square (which exists solely to reveal when the red square does
 not properly return the graphics handle to it's state pre-draw).

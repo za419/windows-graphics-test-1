@@ -11,6 +11,6 @@ Control keys are:
  - [Up/Down arrows] Scale all objects up and down in size
  - [Q/E] Increase/Decrease the size of the red square
  - [Tab] Reset the size of the red square
- - [|\] Reset the scaling of all objects
+ - [|\\] Reset the scaling of all objects
  - [Spacebar] Stop the red square
  - [Enter] Reset the rotation of the red square

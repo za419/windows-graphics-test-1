@@ -365,6 +365,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			case VK_OEM_5: // For US standard, \ and |
 				scale=1;
 				break;
+			case VK_RETURN:
+				player.rotation = 0;
+				break;
 			case VK_SPACE:
 				player.xvelocity = player.yvelocity = 0;
 				break;

@@ -13,3 +13,4 @@ Control keys are:
  - [Tab] Reset the size of the red square
  - [|\] Reset the scaling of all objects
  - [Spacebar] Stop the red square
+ - [Enter] Reset the rotation of the red square

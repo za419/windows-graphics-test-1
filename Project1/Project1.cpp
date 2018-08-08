@@ -227,8 +227,13 @@ protected:
 	float sinr;
 
 	void doTrig() {
-		cosr = ::cos(rotation);
-		sinr = ::sin(rotation);
+		static float lastRotation = NAN;
+
+		if (lastRotation != rotation) {
+			cosr = ::cos(rotation);
+			sinr = ::sin(rotation);
+			lastRotation = rotation;
+		}
 	}
 
 	void setScale(HDC hdc) {

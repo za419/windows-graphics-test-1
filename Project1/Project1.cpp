@@ -170,6 +170,14 @@ public:
 		clearScale(hdc);
 	}
 
+	void performDrawTo(HDC hdc) {
+		// This is just a shorthand for beginDrawTo, drawTo, endDrawTo
+		// However, the implementation may call those separately if it wishes.
+		beginDrawTo(hdc);
+		drawTo(hdc);
+		endDrawTo(hdc);
+	}
+
 	virtual void tick(HWND hWnd) {
 		RECT window;
 		GetWindowRect(hWnd, &window);
@@ -265,23 +273,50 @@ protected:
 };
 
 class Square : public GameObject {
+private:
+	HBRUSH m_brush;
+	COLORREF m_prior_color;
+
+	void m_checkBrush() {
+		if (color != m_prior_color) {
+			DeleteObject(m_brush);
+			m_brush = CreateSolidBrush(color);
+			m_prior_color = color;
+		}
+	}
+
 public:
-	Square() {}
+	Square() {
+		m_brush = CreateSolidBrush(color);
+		m_prior_color = color;
+	}
 
-	Square(size_t s) : GameObject(s) {}
+	Square(size_t s) : GameObject(s) {
+		m_brush = CreateSolidBrush(color);
+		m_prior_color = color;
+	}
 
-	Square(size_t s, COLORREF c) : GameObject(s, c) {}
+	Square(size_t s, COLORREF c) : GameObject(s, c),
+		m_brush(CreateSolidBrush(c)),
+		m_prior_color(c) {}
 
-	Square(size_t s, COLORREF c, int x, int y) : GameObject(s, c, x, y) {}
+	Square(size_t s, COLORREF c, int x, int y) : GameObject(s, c, x, y),
+		m_brush(CreateSolidBrush(c)),
+		m_prior_color(c) {}
 
-	Square(size_t s, COLORREF c, int x, int y, float r) : GameObject(s, c, x, y, r) {}
+	Square(size_t s, COLORREF c, int x, int y, float r) : GameObject(s, c, x, y, r),
+		m_brush(CreateSolidBrush(c)),
+		m_prior_color(c) {}
+
+	virtual ~Square() {
+		DeleteObject(m_brush);
+	}
 
 	virtual void drawTo(HDC hdc) override {
 		LONG halfsize = size / 2;
 		RECT rect{ xcenter - halfsize, ycenter - halfsize, xcenter + halfsize, ycenter + halfsize };
-		auto brush(CreateSolidBrush(color));
-		FillRect(hdc, &rect, brush);
-		DeleteObject(brush);
+		m_checkBrush();
+		FillRect(hdc, &rect, m_brush);
 	}
 
 	const float cos() {
@@ -384,8 +419,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             PAINTSTRUCT ps;
             HDC hdc = BeginPaint(hWnd, &ps);
 			SetGraphicsMode(hdc, GM_ADVANCED);
-			player.drawTo(hdc);
-			test.drawTo(hdc);
+			player.performDrawTo(hdc);
+			test.performDrawTo(hdc);
             EndPaint(hWnd, &ps);
 
 			player.tick(hWnd);

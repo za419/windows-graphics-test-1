@@ -113,64 +113,64 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 
 float scale(1);
 
-class Square {
+class GameObject {
 public:
 	size_t size;
 	COLORREF color;
 	int xcenter;
 	int ycenter;
 
-	int8_t xvelocity=0;
-	int8_t yvelocity=0;
+	int8_t xvelocity = 0;
+	int8_t yvelocity = 0;
 
 	float rotation;
-	
-	Square(): size(0),
-		color(RGB(0,0,0)),
-		xcenter(size/2),
-		ycenter(size/2),
+
+	GameObject() : size(0),
+		color(RGB(0, 0, 0)),
+		xcenter(size / 2),
+		ycenter(size / 2),
 		rotation(0) {}
 
-	Square(size_t s) : size(s),
+	GameObject(size_t s) : size(s),
 		color(RGB(0, 0, 0)),
 		xcenter(size / 2),
 		ycenter(size / 2) {}
 
-	Square(size_t s, COLORREF c) : size(s),
+	GameObject(size_t s, COLORREF c) : size(s),
 		color(c),
 		xcenter(size / 2),
 		ycenter(size / 2),
 		rotation(0) {}
 
-	Square(size_t s, COLORREF c, int x, int y) :size(s),
+	GameObject(size_t s, COLORREF c, int x, int y) :size(s),
 		color(c),
 		xcenter(x),
 		ycenter(y),
 		rotation(0) {}
 
-	Square(size_t s, COLORREF c, int x, int y, float r) :size(s),
+	GameObject(size_t s, COLORREF c, int x, int y, float r) :size(s),
 		color(c),
 		xcenter(x),
 		ycenter(y),
 		rotation(r) {}
 
-	void drawTo(HDC hdc) {
+	virtual ~GameObject() {}
+
+	void beginDrawTo(HDC hdc) {
 		doTrig();
 
 		setScale(hdc);
 		setRotation(hdc);
+	}
 
-		LONG halfsize = size / 2;
-		RECT rect{ xcenter - halfsize, ycenter - halfsize, xcenter + halfsize, ycenter + halfsize };
-		auto brush(CreateSolidBrush(color));
-		FillRect(hdc, &rect, brush);
-		DeleteObject(brush);
+	virtual void drawTo(HDC hdc) = 0;
 
+	void endDrawTo(HDC hdc) {
 		clearRotation(hdc);
 		clearScale(hdc);
 	}
 
-	void tick(HWND hWnd) {
+	virtual void tick(HWND hWnd) {
 		RECT window;
 		GetWindowRect(hWnd, &window);
 		auto t = window.top;
@@ -229,6 +229,83 @@ protected:
 			0,
 			0,
 			scale,
+			-(xcenter*(scale - 1)),
+			-(ycenter*(scale - 1))
+		};
+
+		ModifyWorldTransform(hdc, &transform, MWT_RIGHTMULTIPLY);
+	}
+
+	void clearScale(HDC hdc) {
+		float sc(scale);
+		scale = 1 / scale;
+		setScale(hdc);
+		scale = sc;
+	}
+
+	void setRotation(HDC hdc) {
+		XFORM transform{
+			cosr,
+			sinr,
+			-sinr,
+			cosr,
+			xcenter - (xcenter*cosr - ycenter*sinr),
+			ycenter - (xcenter*sinr + ycenter*cosr)
+		};
+
+		ModifyWorldTransform(hdc, &transform, MWT_RIGHTMULTIPLY);
+	}
+
+	void clearRotation(HDC hdc) {
+		rotation = -rotation;
+		doTrig();
+		setRotation(hdc);
+		rotation = -rotation;
+	}
+};
+
+class Square : public GameObject {
+public:
+	Square() {}
+
+	Square(size_t s) : GameObject(s) {}
+
+	Square(size_t s, COLORREF c) : GameObject(s, c) {}
+
+	Square(size_t s, COLORREF c, int x, int y) : GameObject(s, c, x, y) {}
+
+	Square(size_t s, COLORREF c, int x, int y, float r) : GameObject(s, c, x, y, r) {}
+
+	virtual void drawTo(HDC hdc) override {
+		LONG halfsize = size / 2;
+		RECT rect{ xcenter - halfsize, ycenter - halfsize, xcenter + halfsize, ycenter + halfsize };
+		auto brush(CreateSolidBrush(color));
+		FillRect(hdc, &rect, brush);
+		DeleteObject(brush);
+	}
+
+	const float cos() {
+		return cosr;
+	}
+
+	const float sin() {
+		return sinr;
+	}
+protected:
+	float cosr;
+	float sinr;
+
+	void doTrig() {
+		cosr = ::cos(rotation);
+		sinr = ::sin(rotation);
+	}
+
+	void setScale(HDC hdc) {
+		XFORM transform{
+			scale,
+			0,
+			0,
+			scale,
 			-(xcenter*(scale-1)),
 			-(ycenter*(scale-1))
 		};
@@ -242,7 +319,7 @@ protected:
 		setScale(hdc);
 		scale = sc;
 	}
-	
+
 	void setRotation(HDC hdc) {
 		XFORM transform{
 			cosr,
@@ -310,7 +387,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			player.drawTo(hdc);
 			test.drawTo(hdc);
             EndPaint(hWnd, &ps);
-	
+
 			player.tick(hWnd);
 
 			auto diff = std::chrono::duration_cast<std::chrono::milliseconds> (next - std::chrono::steady_clock::now());
